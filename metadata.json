@@ -1,0 +1,6 @@
+{
+  "name": "Dr. Ananya Rao - Appointment Booking & Healthcare Portal",
+  "description": "Comprehensive clinic appointment booking system with backend database, multi-service selection, schedule management, and secure UPI and Card payment gateway.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
