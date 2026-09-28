@@ -1,10 +1,11 @@
 -- ============================================================================
 -- DR. ANANYA RAO CLINIC - SUPABASE POSTGRESQL SCHEMA
--- Supports: Appointment Booking, Instant Slot Locking, Razorpay Transactions
+-- Target Database: https://bojpptbyayyrbfjuphgb.supabase.co
+-- Supports: Appointments, Real-time Slot Locking, Razorpay Payment Records
 -- ============================================================================
 
 -- 1. APPOINTMENTS TABLE
--- Stores patient booking details and locked time slots
+-- Stores patient appointments and locked consultation time slots
 CREATE TABLE IF NOT EXISTS public.appointments (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     appointment_number TEXT UNIQUE NOT NULL,
@@ -62,7 +63,7 @@ ON public.payments (razorpay_payment_id);
 
 
 -- 3. TREATMENT SERVICES CATALOG TABLE
--- Stores treatments, pricing, duration, and details
+-- Stores treatment offerings and details
 CREATE TABLE IF NOT EXISTS public.treatment_services (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -95,6 +96,7 @@ CREATE TABLE IF NOT EXISTS public.patient_reviews (
 
 -- ============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
+-- Idempotent: Can be run multiple times safely
 -- ============================================================================
 
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
@@ -102,16 +104,32 @@ ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.treatment_services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.patient_reviews ENABLE ROW LEVEL SECURITY;
 
--- Allow public read and write for patient booking flow
+-- Appointments Policies
+DROP POLICY IF EXISTS "Public read appointments" ON public.appointments;
 CREATE POLICY "Public read appointments" ON public.appointments FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public insert appointments" ON public.appointments;
 CREATE POLICY "Public insert appointments" ON public.appointments FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public update appointments" ON public.appointments;
 CREATE POLICY "Public update appointments" ON public.appointments FOR UPDATE USING (true);
 
+-- Payments Policies
+DROP POLICY IF EXISTS "Public read payments" ON public.payments;
 CREATE POLICY "Public read payments" ON public.payments FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public insert payments" ON public.payments;
 CREATE POLICY "Public insert payments" ON public.payments FOR INSERT WITH CHECK (true);
 
+-- Treatment Services Policies
+DROP POLICY IF EXISTS "Public read services" ON public.treatment_services;
 CREATE POLICY "Public read services" ON public.treatment_services FOR SELECT USING (true);
+
+-- Reviews Policies
+DROP POLICY IF EXISTS "Public read reviews" ON public.patient_reviews;
 CREATE POLICY "Public read reviews" ON public.patient_reviews FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public insert reviews" ON public.patient_reviews;
 CREATE POLICY "Public insert reviews" ON public.patient_reviews FOR INSERT WITH CHECK (true);
 
 
@@ -135,7 +153,7 @@ EXECUTE FUNCTION public.handle_updated_at();
 
 
 -- ============================================================================
--- SEED INITIAL SERVICES & DEMO DATA
+-- SEED INITIAL SERVICES & REVIEWS
 -- ============================================================================
 
 INSERT INTO public.treatment_services (id, name, category, numeric_price, duration_minutes, price_text, breakdown, description, image_url, includes)
@@ -144,4 +162,15 @@ VALUES
 ('root-canal', 'Single-Visit Root Canal Therapy', 'Endodontics', 4500.00, 60, '₹4,500', 'Pulp treatment + Biomechanical prep', 'Painless, rotary endodontic treatment utilizing apex locators and digital imaging to save infected or severely damaged natural teeth.', 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=600', '["Digital diagnostic X-rays", "Computerized rotary canal prep", "Thermal gutta-percha obturation", "Temporary post & core buildup"]'),
 ('teeth-whitening', 'Laser In-Office Teeth Whitening', 'Cosmetic', 6500.00, 45, '₹6,500', 'Bleaching gel + Blue LED activation', 'Medical-grade 35% hydrogen peroxide gel activated with specialized LED light to safely brighten enamel up to 8 shades in one sitting.', 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&q=80&w=600', '["Gingival barrier protection", "3 cycles of LED bleaching", "Enamel remineralizing treatment", "Take-home touchup gel"]'),
 ('dental-implants', 'Titanium Dental Implant Consultation', 'Implantology', 25000.00, 60, '₹25,000', 'Surgical placement + Custom abutment', 'Permanent, natural-feeling tooth replacement using biocompatible grade 4 titanium fixture fused directly with the jawbone.', 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=600', '["3D CBCT scan evaluation", "Precision surgical placement", "Healing screw & cap", "Post-op medication kit"]')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET 
+    name = EXCLUDED.name,
+    numeric_price = EXCLUDED.numeric_price,
+    price_text = EXCLUDED.price_text,
+    description = EXCLUDED.description;
+
+INSERT INTO public.patient_reviews (patient_name, initials, rating, treatment, comment, verified, avatar_color)
+VALUES 
+('Priya Sharma', 'PS', 5, 'Teeth Cleaning & Polishing', 'Dr. Ananya Rao is gentle and thorough. The procedure was completely painless and the clinic environment is spotless!', true, 'bg-teal-600'),
+('Rahul Verma', 'RV', 5, 'Single-Visit Root Canal', 'I was very nervous about root canal treatment, but Dr. Rao made it completely painless and quick in a single visit.', true, 'bg-blue-600'),
+('Sneha Patel', 'SP', 5, 'In-Office Teeth Whitening', 'Remarkable difference in just 45 minutes! Professional service, transparent deposit policy, and warm care.', true, 'bg-indigo-600')
+ON CONFLICT DO NOTHING;

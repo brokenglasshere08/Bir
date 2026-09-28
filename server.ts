@@ -17,8 +17,19 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Supabase PostgreSQL Client
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://eaasarhbhpymzffbkjtu.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_Qa7limzeHX2oDw88zjEUGw_6ky30zKz';
+const supabaseUrl =
+  process.env.SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  'https://bojpptbyayyrbfjuphgb.supabase.co';
+
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  'sb_publishable_0E58qrUVMsOmZOjkQqTg2g_ryCNqi3Q';
 
 let supabaseClient: any = null;
 if (supabaseUrl && supabaseKey && !supabaseUrl.includes('placeholder')) {
